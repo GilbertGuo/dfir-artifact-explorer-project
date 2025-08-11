@@ -1,0 +1,391 @@
+[
+    {
+      "id": "w-amcache",
+      "name": "Amcache.hve",
+      "slug": "windows-amcache",
+      "platform": "windows",
+      "tactic_tags": ["Execution", "Persistence", "Discovery"],
+      "artifact_class": "Registry/Configuration DB",
+      "summary": "Program execution/install traces with path, SHA1, first/last run and more.",
+      "description": "AMCache database records metadata about executed/installed programs. Great for establishing presence and approximating first/last use.",
+      "locations": [{ "path": "C:\\Windows\\AppCompat\\Programs\\Amcache.hve", "scope": "system" }],
+      "timestamps": [
+        { "name": "ProgramLastRun", "source": "Amcache hive values", "tz_behavior": "Local", "precision": "seconds" }
+      ],
+      "parsers": [
+        { "tool_name": "AmcacheParser (Zimmerman)", "command_example": "AmcacheParser.exe -f Amcache.hve --csv out" },
+        { "tool_name": "KAPE", "command_example": "kape.exe --msource C: --module !SANS_Triage --tsource C:" }
+      ],
+      "collection_methods": ["Disk image", "Live copy"],
+      "validation": ["Correlate with Prefetch/Jumplists", "Compare file hash vs Amcache SHA1"],
+      "known_pitfalls": ["Schema differs by OS build", "Not all executions are recorded"]
+    },
+    {
+      "id": "w-shimcache",
+      "name": "Shimcache (AppCompatCache)",
+      "slug": "windows-shimcache",
+      "platform": "windows",
+      "tactic_tags": ["Execution", "Defense Evasion"],
+      "artifact_class": "Registry/Configuration DB",
+      "summary": "Cache of file paths and metadata seen by the OS; suggests presence/possible execution.",
+      "description": "AppCompatCache stores entries that often indicate a binary was present and may have executed. Not a definitive run log.",
+      "locations": [
+        { "path": "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\AppCompatCache", "scope": "system" }
+      ],
+      "timestamps": [
+        { "name": "LastModifiedTime", "source": "Cache entry (varies by OS)", "tz_behavior": "Local", "precision": "seconds" }
+      ],
+      "parsers": [
+        { "tool_name": "AppCompatCacheParser (Zimmerman)", "command_example": "AppCompatCacheParser.exe -f SYSTEM --csv out" },
+        { "tool_name": "RegRipper", "command_example": "rip.exe -r SYSTEM -p appcompatcache" }
+      ],
+      "collection_methods": ["Registry hive export", "Disk image"],
+      "validation": ["Cross-check with Prefetch/Jumplists/LECmd"],
+      "known_pitfalls": ["Meaning of timestamp differs per OS", "Entries can be stale"]
+    },
+    {
+      "id": "w-lnk",
+      "name": "LNK (Shell Link) Files",
+      "slug": "windows-lnk",
+      "platform": "windows",
+      "tactic_tags": ["Execution", "Discovery", "Collection"],
+      "artifact_class": "Application Data",
+      "summary": "Shortcuts capturing target path, volume serial, MAC times; strong for file usage timelines.",
+      "description": "User Recent Items and other LNKs provide rich metadata including target path and timestamps.",
+      "locations": [
+        { "path": "%APPDATA%\\Microsoft\\Windows\\Recent\\*.lnk", "scope": "user" }
+      ],
+      "timestamps": [
+        { "name": "Created/Accessed/Modified", "source": "LNK header", "tz_behavior": "Local", "precision": "seconds" }
+      ],
+      "parsers": [
+        { "tool_name": "LECmd (Zimmerman)", "command_example": "LECmd.exe -d \"%APPDATA%\\Microsoft\\Windows\\Recent\" --csv out" }
+      ],
+      "collection_methods": ["User profile copy", "Disk image"],
+      "validation": ["Correlate with Jumplists, Prefetch, $MFT"],
+      "known_pitfalls": ["Easy to delete/rotate", "Jump Lists may supersede"]
+    },
+    {
+      "id": "w-srum",
+      "name": "SRUM (SRUDB.dat)",
+      "slug": "windows-srum",
+      "platform": "windows",
+      "tactic_tags": ["Discovery", "Lateral Movement", "Command and Control"],
+      "artifact_class": "Application Data",
+      "summary": "Energy/network usage DB that can show process, user, and network activity over time.",
+      "description": "System Resource Usage Monitor database contains per-process/app usage including network bytes.",
+      "locations": [{ "path": "C:\\Windows\\System32\\sru\\SRUDB.dat", "scope": "system" }],
+      "timestamps": [
+        { "name": "RecordTime", "source": "Table timestamps", "tz_behavior": "Local", "precision": "seconds" }
+      ],
+      "parsers": [
+        { "tool_name": "SrumECmd (Zimmerman)", "command_example": "SrumECmd.exe -f C:\\Windows\\System32\\sru\\SRUDB.dat --csv out" }
+      ],
+      "collection_methods": ["Live copy (preferably quiesced)", "Disk image"],
+      "validation": ["Compare with Prefetch/4688/Netflow"],
+      "known_pitfalls": ["Schema varies; time units can be tricky", "Rotation/compaction occurs"]
+    },
+    {
+      "id": "w-jumplists",
+      "name": "Jump Lists",
+      "slug": "windows-jumplists",
+      "platform": "windows",
+      "tactic_tags": ["Execution", "Discovery"],
+      "artifact_class": "Application Data",
+      "summary": "Automatic/CustomDestinations show recently opened files/apps with timestamps.",
+      "description": "Per-app Jump Lists capture recent items and executions; very useful for user activity.",
+      "locations": [
+        { "path": "%APPDATA%\\Microsoft\\Windows\\Recent\\AutomaticDestinations\\*.automaticDestinations-ms", "scope": "user" },
+        { "path": "%APPDATA%\\Microsoft\\Windows\\Recent\\CustomDestinations\\*.customDestinations-ms", "scope": "user" }
+      ],
+      "timestamps": [
+        { "name": "Entry timestamps", "source": "Jumplist streams", "tz_behavior": "Local", "precision": "seconds" }
+      ],
+      "parsers": [
+        { "tool_name": "JLECmd (Zimmerman)", "command_example": "JLECmd.exe -d \"%APPDATA%\\Microsoft\\Windows\\Recent\\AutomaticDestinations\" --csv out" }
+      ],
+      "collection_methods": ["User profile copy", "Disk image"],
+      "validation": ["Correlate with LNK/Prefetch/Amcache"],
+      "known_pitfalls": ["Per-app, can rotate", "Pinning vs recent lists can differ"]
+    },
+    {
+      "id": "w-schtasks",
+      "name": "Scheduled Tasks",
+      "slug": "windows-scheduled-tasks",
+      "platform": "windows",
+      "tactic_tags": ["Persistence", "Execution"],
+      "artifact_class": "Configuration",
+      "summary": "Tasks and triggers provide strong evidence of persistence/execution.",
+      "description": "XML task definitions and operational logs reveal commands, accounts, and run history.",
+      "locations": [
+        { "path": "C:\\Windows\\System32\\Tasks\\*", "scope": "system" },
+        { "path": "Microsoft-Windows-TaskScheduler/Operational (Event Log)", "scope": "system" }
+      ],
+      "timestamps": [
+        { "name": "RegistrationInfo.Date", "source": "Task XML", "tz_behavior": "Local", "precision": "seconds" },
+        { "name": "Event Times", "source": "TaskScheduler/Operational", "tz_behavior": "Local", "precision": "seconds" }
+      ],
+      "parsers": [
+        { "tool_name": "WxTCmd (Zimmerman)", "command_example": "WxTCmd.exe -d C:\\Windows\\System32\\Tasks --csv out" },
+        { "tool_name": "PowerShell", "command_example": "Get-ScheduledTask | Get-ScheduledTaskInfo" }
+      ],
+      "collection_methods": ["Disk image", "Event log export"],
+      "validation": ["Cross-check with 4698/106/200 series events", "Correlate with file writes and Prefetch"],
+      "known_pitfalls": ["XML times can be local vs UTC depending on source", "History disabled on some systems"]
+    },
+    {
+        "id": "w-evtx",
+        "name": "Windows Event Logs (EVTX)",
+        "slug": "windows-evtx",
+        "platform": "windows",
+        "tactic_tags": ["All"],
+        "artifact_class": "Logs",
+        "summary": "Core event logs for security, system, application, and many providers.",
+        "description": "Winevt logs underpin most timelines (Security, System, Application, and provider-specific channels).",
+        "locations": [{ "path": "C:\\Windows\\System32\\winevt\\Logs\\*.evtx", "scope": "system" }],
+        "timestamps": [
+          { "name": "Event.System.TimeCreated", "source": "EVTX", "tz_behavior": "Local", "precision": "ms" }
+        ],
+        "event_ids": [
+          {
+            "ids": ["4624", "4625", "4634", "4647"],
+            "source": "Security",
+            "description": "Logon-related events: 4624 (successful logon), 4625 (failed logon), 4634 (logoff), 4647 (user-initiated logoff). Useful for authentication timelines."
+          },
+          {
+            "ids": ["1149", "1024", "21", "22", "24", "25"],
+            "source": "Microsoft-Windows-TerminalServices-RemoteConnectionManager / LocalSessionManager",
+            "description": "RDP/terminal services connection events: 1149 (successful RDP logon), 1024/21 (session connect), 22 (disconnect), 24 (reconnect), 25 (disconnect reason)."
+          },
+          {
+            "ids": ["7045", "4697"],
+            "source": "System / Security",
+            "description": "Service creation events: 7045 (System log – new service installed), 4697 (Security log – service installed). Persistence indicator."
+          },
+          {
+            "ids": ["1102", "104"],
+            "source": "Security / Microsoft-Windows-Eventlog",
+            "description": "Audit log clear: 1102 (Security log cleared), 104 (Operational log cleared). Strong defense evasion signal."
+          },
+          {
+            "ids": ["1006", "1007"],
+            "source": "GroupPolicy",
+            "description": "Group Policy processing events: 1006 (failure), 1007 (success). May indicate GPO deployment or tampering."
+          },
+          {
+            "ids": ["1116", "1117", "1011", "1108", "1015"],
+            "source": "Windows Defender",
+            "description": "Defender detection/operational events: 1116 (malware detected), 1117 (cleaned), 1011 (scan stopped), 1108 (engine error), 1015 (scan started)."
+          },
+          {
+            "ids": ["106", "140", "141", "200", "4698", "4709", "4700", "4702"],
+            "source": "Task Scheduler / Security",
+            "description": "Scheduled task events: 106/140/141/200 (creation, registration, update), 4698 (task created), 4709 (deleted), 4700 (enabled), 4702 (updated). Common for persistence."
+          },
+          {
+            "ids": ["4688", "4689"],
+            "source": "Security",
+            "description": "Process creation/termination: 4688 (process start, command line), 4689 (process exit). Key for execution tracing."
+          },
+          {
+            "ids": ["4100", "4103", "4104"],
+            "source": "Microsoft-Windows-PowerShell",
+            "description": "PowerShell activity: 4100 (engine start), 4103 (module loaded), 4104 (script block logging – actual script content)."
+          }
+        ],
+        "parsers": [
+          { "tool_name": "EvtxECmd (Zimmerman)", "command_example": "EvtxECmd.exe -d C:\\Windows\\System32\\winevt\\Logs --csv out" },
+          { "tool_name": "Chainsaw", "command_example": "chainsaw hunt C:\\Windows\\System32\\winevt\\Logs --rules rules" }
+        ],
+        "collection_methods": ["Log export (.evtx)", "Disk image"],
+        "validation": ["Correlate with $MFT/USN, Prefetch, others"],
+        "known_pitfalls": ["Log rollover/clearing", "Time skew or wrong TZ on host"]
+    },      
+    {
+      "id": "w-mft",
+      "name": "NTFS $MFT",
+      "slug": "windows-mft",
+      "platform": "windows",
+      "tactic_tags": ["Discovery", "Defense Evasion", "Impact"],
+      "artifact_class": "File System Metadata",
+      "summary": "Master File Table with per-file MAC$E timestamps and metadata.",
+      "description": "The $MFT records file metadata and timelines across the volume.",
+      "locations": [{ "path": "$MFT (NTFS volume)", "scope": "system" }],
+      "timestamps": [
+        { "name": "Standard Info / File Name MAC times", "source": "NTFS metadata", "tz_behavior": "UTC", "precision": "100ns" }
+      ],
+      "parsers": [
+        { "tool_name": "MFTECmd (Zimmerman)", "command_example": "MFTECmd.exe -f \\\\?\\C:\\$MFT --csv out" }
+      ],
+      "collection_methods": ["Disk image", "Raw disk access"],
+      "validation": ["Cross-check with USN Journal, EVTX file events"],
+      "known_pitfalls": ["TZ display depends on tool", "Volume shadow copies can help with historical state"]
+    },
+    {
+      "id": "w-usn",
+      "name": "NTFS USN Journal ($J)",
+      "slug": "windows-usn",
+      "platform": "windows",
+      "tactic_tags": ["Discovery", "Defense Evasion"],
+      "artifact_class": "File System Metadata",
+      "summary": "Change journal capturing file create/modify/rename/delete with reasons.",
+      "description": "USN Journal logs file system changes for NTFS volumes—excellent for reconstruction.",
+      "locations": [{ "path": "$Extend\\$UsnJrnl:$J", "scope": "system" }],
+      "timestamps": [
+        { "name": "USN Timestamp", "source": "USN record", "tz_behavior": "UTC", "precision": "100ns" }
+      ],
+      "parsers": [
+        { "tool_name": "MFTECmd (USN mode)", "command_example": "MFTECmd.exe -usnjrnl -f \\\\?\\C:\\$Extend\\$UsnJrnl:$J --csv out" }
+      ],
+      "collection_methods": ["Disk image", "Raw disk access"],
+      "validation": ["Correlate with $MFT entries and EVTX file events"],
+      "known_pitfalls": ["Journal can be truncated or disabled", "High-churn systems rotate quickly"]
+    },
+    {
+      "id": "w-wmi",
+      "name": "WMI Activity & Persistence",
+      "slug": "windows-wmi-activity",
+      "platform": "windows",
+      "tactic_tags": ["Persistence", "Execution", "Discovery"],
+      "artifact_class": "Configuration/Logs",
+      "summary": "Event filters/consumers/bindings used for persistence; operational log captures activity.",
+      "description": "Adversaries use WMI Event Subscriptions for stealthy persistence and execution.",
+      "locations": [
+        { "path": "Microsoft-Windows-WMI-Activity/Operational (Event Log)", "scope": "system" },
+        { "path": "WMI Repository (CIM)", "scope": "system" }
+      ],
+      "timestamps": [
+        { "name": "WMI Event Time", "source": "WMI-Activity/Operational", "tz_behavior": "Local", "precision": "seconds" }
+      ],
+      "parsers": [
+        { "tool_name": "PowerShell", "command_example": "Get-WmiObject -Namespace root\\subscription -Class __EventFilter" },
+        { "tool_name": "Velociraptor", "command_example": "Artifact.Windows.EventLogs.WMIActivity" }
+      ],
+      "collection_methods": ["Event log export", "CIM repo dump", "Live triage"],
+      "validation": ["Correlate with Scheduled Tasks/EVTX process starts"],
+      "known_pitfalls": ["Repository corruption not uncommon", "Requires careful scoping to avoid noise"]
+    },
+  
+    {
+      "id": "c-msgtrace",
+      "name": "M365 Exchange Message Trace",
+      "slug": "m365-message-trace",
+      "platform": "m365",
+      "tactic_tags": ["Initial Access", "Exfiltration", "Discovery"],
+      "artifact_class": "Logs",
+      "summary": "Mail flow telemetry for messages: sender, recipient, subject, status, connectors.",
+      "description": "Message Trace helps reconstruct phishing/BEC paths and delivery outcomes.",
+      "locations": [{ "path": "Exchange Admin Center → Mail flow → Message trace", "scope": "tenant" }],
+      "timestamps": [
+        { "name": "Received", "source": "Message trace record", "tz_behavior": "UTC", "precision": "seconds" }
+      ],
+      "parsers": [
+        { "tool_name": "PowerShell", "command_example": "Get-MessageTrace -StartDate ... -EndDate ... -Sender/Recipient ..." }
+      ],
+      "collection_methods": ["Portal export", "PowerShell"],
+      "validation": ["Cross-check UAL, Mailbox audit, headers (Received chain)"],
+      "known_pitfalls": ["Retention limits; aggregates vs extended traces"]
+    },
+    {
+      "id": "c-entra-signins",
+      "name": "Entra ID (Azure AD) Sign-ins",
+      "slug": "m365-entra-signins",
+      "platform": "m365",
+      "tactic_tags": ["Initial Access", "Credential Access", "Lateral Movement"],
+      "artifact_class": "Logs",
+      "summary": "User/app sign-in events including IP, device, MFA result, CA policy decision.",
+      "description": "Core identity telemetry for account compromise investigations.",
+      "locations": [
+        { "path": "Entra admin portal → Monitoring → Sign-in logs", "scope": "tenant" }
+      ],
+      "timestamps": [
+        { "name": "createdDateTime", "source": "Sign-in log", "tz_behavior": "UTC", "precision": "seconds" }
+      ],
+      "parsers": [
+        { "tool_name": "Kusto/Sentinel", "command_example": "SigninLogs | where UserPrincipalName == \"user@org\" | take 100" },
+        { "tool_name": "Graph API", "command_example": "GET /auditLogs/signIns?$filter=createdDateTime ge ..." }
+      ],
+      "collection_methods": ["Portal export", "Sentinel connector", "Graph API"],
+      "validation": ["Correlate with UAL and device EDR timeline"],
+      "known_pitfalls": ["Conditional Access may block before sign-in completes; look at Status and AdditionalDetails"]
+    },
+    {
+        "id": "m365-gui-collect",
+        "name": "M365 GUI Log Collection",
+        "slug": "m365-gui-log-collection",
+        "platform": "m365",
+        "tactic_tags": ["Discovery", "Investigation Preparation"],
+        "artifact_class": "Procedural Guide",
+        "summary": "Point-and-click steps to export key Microsoft 365/Entra logs.",
+        "description": "Enterprise Apps, App Registrations, Audit Logs, Sign-ins (incl. legacy auth filter), Incidents & Alerts, Risky Activities.",
+        "gui_log_collection_steps": [
+          "Enterprise Applications Log: Identity Admin Center → Applications → Enterprise applications → Download Results",
+          "App Registrations Log: Identity Admin Center → Applications → App registrations → All Applications → Download Results",
+          "Azure Audit Logs: Identity Admin Center → Users → All Users → Audit Logs → Set Date to Maximum → Show Dates as UTC",
+          "Sign-in Logs (All Users): Identity Admin Center → Users → All Users → Sign-in Logs → Set Date to Maximum → Show Dates as UTC",
+          "Legacy Authentication Check: Sign-in Logs → Add Filters → Client App → Check all Legacy Authentication Clients → Apply → Download",
+          "Incidents (M365 Defender): Security Admin Center → Investigation & Response → Incidents → Date range 6 months → Export",
+          "Alerts (M365 Defender): Security Admin Center → Incidents & Alerts → Alerts → Date range 6 months → Export",
+          "Risky Users: Identity Admin Center → Protection → Security Center → Risky Activities → Risky Users → (UTC before download)",
+          "Risky Workload Identities: … → Risky Workload Identities → (UTC)",
+          "Risky Sign-ins: … → Risky Sign-ins → Set Date to Maximum → UTC",
+          "Risk Detections: … → Risk Detections → Set Date to Maximum → UTC"
+        ],
+        "references": [
+          { "title": "Enterprise Applications", "url": "https://entra.microsoft.com/#view/Microsoft_AAD_IAM/StartboardApplicationsMenuBlade/~/AppAppsPreview?Microsoft_AAD_IAM_legacyAADRedirect=true" },
+          { "title": "App Registrations", "url": "https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade/quickStartType~/null/sourceType/Microsoft_AAD_IAM?Microsoft_AAD_IAM_legacyAADRedirect=true" },
+          { "title": "Azure Audit Logs", "url": "https://entra.microsoft.com/#view/Microsoft_AAD_UsersAndTenants/UserManagementMenuBlade/~/Audit/menuId/?Microsoft_AAD_IAM_legacyAADRedirect=true" },
+          { "title": "Sign-in Logs", "url": "https://entra.microsoft.com/#view/Microsoft_AAD_UsersAndTenants/UserManagementMenuBlade/~/SignIns/menuId/?Microsoft_AAD_IAM_legacyAADRedirect=true" }
+        ]
+      },
+      {
+        "id": "m365-due-diligence",
+        "name": "M365 Due Diligence Checks",
+        "slug": "m365-due-diligence-checks",
+        "platform": "m365",
+        "tactic_tags": ["Discovery", "Investigation Preparation"],
+        "artifact_class": "Procedural Guide",
+        "summary": "Environment posture checks to record before (or alongside) log collection.",
+        "description": "User counts, Defender for O365 enablement, password protection mode, session settings, security defaults, CA policies, named locations, per-user MFA, secure score.",
+        "due_diligence_checks": [
+          "Users count: Identity Admin Center → Users → All Users → # Users Found",
+          "Microsoft Defender for Office 365: Security Admin Center → Email & Collaboration → Investigations → Export 6 months (or note Not Enabled)",
+          "Password Protection in Azure: Portal.azure.com → Microsoft Entra Password Protection → Note Yes/No and Enforced/Audit",
+          "Keep User Signed In: Identity Admin Center → Users → User Settings → Show Keep User Signed In (Yes/No)",
+          "Idle Session Timeout: Admin Center → Settings → Security & Privacy → Idle Session Timeout → Enabled/Not Enabled",
+          "Security Defaults: Azure AD Properties → Enabled/Not Enabled (affects MFA/legacy auth)",
+          "Conditional Access Policies: Identity Admin Center → Protection → Conditional Access → Policies",
+          "Named Locations: Identity Admin Center → Protection → Conditional Access → Named Locations",
+          "Per-user MFA: Identity Admin Center → Users → All Users → Per User MFA (Disabled/Enabled/Enforced)",
+          "Secure Score: Security Admin Center → Exposure Management → Secure Score"
+        ],
+        "references": [
+          { "title": "Password Protection", "url": "https://portal.azure.com/#view/Microsoft_AAD_ConditionalAccess/PasswordProtectionBlade" },
+          { "title": "Idle Session Timeout", "url": "https://admin.microsoft.com/Adminportal/Home#/Settings/SecurityPrivacy/:/Settings/L1/ActivityBasedTimeout" }
+        ]
+      },
+      {
+        "id": "m365-additional-checks",
+        "name": "M365 Additional Checks",
+        "slug": "m365-additional-checks",
+        "platform": "m365",
+        "tactic_tags": ["Discovery", "Investigation Preparation"],
+        "artifact_class": "Procedural Guide",
+        "summary": "Helpful extras for phishing/URL analysis, message tracing, and content search.",
+        "description": "URL clicks reporting, Advanced Hunting queries (UrlClickEvents), Safe Links policy verification, Message Trace (UTC), and Purview eDiscovery Content Search.",
+        "additional_checks": [
+          "URL Clicks report: security.microsoft.com → Reports → Email & collaboration → URL protection report → View details",
+          "Advanced Hunting: use UrlClickEvents (e.g., ClickAllowed, ThreatTypes has 'Phish')",
+          "Safe Links policy: Threat policies → Safe Links → Ensure click tracking enabled",
+          "Message Trace: admin.exchange.microsoft.com → Mail Flow → Message Trace → Set timezone to UTC before download",
+          "Content Search: purview.microsoft.com → Solutions → eDiscovery → Classic eDiscovery → Content Search"
+        ],
+        "references": [
+          { "title": "M365 Defender portal", "url": "https://security.microsoft.com" },
+          { "title": "Exchange Admin Center", "url": "https://admin.exchange.microsoft.com/#/" },
+          { "title": "Microsoft Purview", "url": "https://purview.microsoft.com" }
+        ]
+      }      
+        
+  ]
+  
