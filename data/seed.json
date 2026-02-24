@@ -385,7 +385,150 @@
           { "title": "Exchange Admin Center", "url": "https://admin.exchange.microsoft.com/#/" },
           { "title": "Microsoft Purview", "url": "https://purview.microsoft.com" }
         ]
+      },
+      {
+        "id": "rmm-tools-config-logs",
+        "name": "RMM Tools – Config & Logs",
+        "slug": "rmm-tools-config-logs",
+        "platform": "windows",
+        "tactic_tags": ["Persistence", "Command and Control", "Execution"],
+        "artifact_class": "Application Data / Logs",
+        "summary": "Config and log file locations for commonly abused RMM tools.",
+        "description": "Grouped by tool for quicker triage. Scope = tool name; Notes = purpose of the path.",
+        "locations": [
+          { "scope": "Splashtop", "notes": "Config", "path": "%ProgramData%\\Splashtop\\Splashtop Remote Client\\" },
+          { "scope": "Splashtop", "notes": "Logs",   "path": "%ProgramData%\\Splashtop\\Logs\\" },
+      
+          { "scope": "Atera", "notes": "Agent", "path": "%ProgramData%\\Atera Networks\\AteraAgent\\" },
+      
+          { "scope": "ScreenConnect", "notes": "Client", "path": "%ProgramData%\\ScreenConnect Client\\" },
+          { "scope": "ScreenConnect", "notes": "Program Files (alt)", "path": "%ProgramFiles%\\ScreenConnect Client\\" },
+      
+          { "scope": "TeamViewer", "notes": "Program", "path": "%ProgramFiles%\\TeamViewer\\" },
+          { "scope": "TeamViewer", "notes": "Logs",    "path": "%ProgramData%\\TeamViewer\\" },
+      
+          { "scope": "AnyDesk", "notes": "User config/logs", "path": "%AppData%\\AnyDesk\\" },
+          { "scope": "AnyDesk", "notes": "System config/logs", "path": "%ProgramData%\\AnyDesk\\" },
+      
+          { "scope": "RPort", "notes": "Config/Logs", "path": "%ProgramData%\\rport\\" },
+      
+          { "scope": "MeshAgent", "notes": "Config/Logs", "path": "%ProgramData%\\Mesh Agent\\" },
+      
+          { "scope": "NinjaRMM", "notes": "Agent", "path": "%ProgramData%\\NinjaRMMAgent\\" }
+        ],
+        "validation": [
+          "Check Windows Services for RMM services",
+          "Correlate folder/file MAC times with first compromise",
+          "Inspect active connections for RMM processes"
+        ],
+        "known_pitfalls": [
+          "Per-user installs vs system-wide differ in paths",
+          "Executables/paths may be renamed by TA",
+          "Some agents write minimal disk logs"
+        ]
+      },
+      {
+        "id": "exfil-tools-config-logs",
+        "name": "Data Exfiltration Tools – Config & Logs",
+        "slug": "exfil-tools-config-logs",
+        "platform": "windows",
+        "tactic_tags": ["Exfiltration", "Command and Control", "Credential Access"],
+        "artifact_class": "Application Data / Logs",
+        "summary": "Common data exfiltration tools with config, logs, and credential file locations.",
+        "description": "Grouped by tool (use `scope` as tool name). Notes indicate Config / Logs / Creds. These paths help confirm tooling used for exfil and recover targets, accounts, and job history.",
+        "locations": [
+          { "scope": "FileZilla", "notes": "Sites (Site Manager)", "path": "%APPDATA%\\FileZilla\\sitemanager.xml" },
+          { "scope": "FileZilla", "notes": "Recent servers", "path": "%APPDATA%\\FileZilla\\recentservers.xml" },
+          { "scope": "FileZilla", "notes": "Main config", "path": "%APPDATA%\\FileZilla\\filezilla.xml" },
+      
+          { "scope": "WinSCP", "notes": "INI config (portable/user)", "path": "%APPDATA%\\WinSCP.ini" },
+          { "scope": "WinSCP", "notes": "Registry config (default)", "path": "HKCU\\Software\\Martin Prikryl\\WinSCP 2\\" },
+          { "scope": "WinSCP", "notes": "Session log (if enabled)", "path": "%TEMP%\\WinSCP.log" },
+      
+          { "scope": "MEGAsync / MEGA", "notes": "Config", "path": "%LOCALAPPDATA%\\MEGAsync\\" },
+          { "scope": "MEGAsync / MEGA", "notes": "Logs", "path": "%LOCALAPPDATA%\\MEGAsync\\logs\\" },
+          { "scope": "MEGAcmd", "notes": "Config / cache", "path": "%USERPROFILE%\\.megaCmd\\" },
+      
+          { "scope": "OneDrive", "notes": "Logs", "path": "%LOCALAPPDATA%\\Microsoft\\OneDrive\\logs\\" },
+          { "scope": "OneDrive", "notes": "Settings DBs", "path": "%LOCALAPPDATA%\\Microsoft\\OneDrive\\settings\\*" },
+          { "scope": "OneDrive", "notes": "Tenant settings (Business*)", "path": "%LOCALAPPDATA%\\Microsoft\\OneDrive\\settings\\Business1\\*" },
+          { "scope": "OneDrive", "notes": "User config (registry)", "path": "HKCU\\Software\\Microsoft\\OneDrive\\" },
+      
+          { "scope": "Google Drive (Drive for desktop)", "notes": "Config & Cache (per user)", "path": "%LOCALAPPDATA%\\Google\\DriveFS\\" },
+          { "scope": "Google Drive (legacy Backup & Sync)", "notes": "Config & Logs", "path": "%LOCALAPPDATA%\\Google\\Drive\\" },
+      
+          { "scope": "rclone", "notes": "Config (remotes, tokens)", "path": "%APPDATA%\\rclone\\rclone.conf" },
+          { "scope": "rclone", "notes": "Log file (if set via --log-file)", "path": "<custom path set by attacker, search for 'rclone.exe' command line in 4688/Prefetch/AMCache>" },
+      
+          { "scope": "AzCopy", "notes": "Job plan / logs / journal", "path": "%USERPROFILE%\\.azcopy\\" },
+      
+          { "scope": "s5cmd", "notes": "Uses AWS creds; logs only if redirected", "path": "%USERPROFILE%\\.aws\\credentials" },
+          { "scope": "s5cmd", "notes": "AWS config", "path": "%USERPROFILE%\\.aws\\config" },
+      
+          { "scope": "AWS CLI", "notes": "Credentials", "path": "%USERPROFILE%\\.aws\\credentials" },
+          { "scope": "AWS CLI", "notes": "Config", "path": "%USERPROFILE%\\.aws\\config" },
+          { "scope": "AWS CLI", "notes": "CLI cache", "path": "%USERPROFILE%\\.aws\\cli\\cache\\" },
+      
+          { "scope": "Cyberduck", "notes": "Bookmarks (saved endpoints/keys)", "path": "%APPDATA%\\Cyberduck\\Bookmarks\\" },
+          { "scope": "Cyberduck", "notes": "Profiles", "path": "%APPDATA%\\Cyberduck\\Profiles\\" },
+      
+          { "scope": "WinSCP (Session Logs folder)", "notes": "If custom log folder set", "path": "<look for /log= or /loglevel= in 4688, JumpLists, Prefetch>" },
+      
+          { "scope": "Bitsadmin / BITS", "notes": "BITS jobs DB", "path": "%ALLUSERSPROFILE%\\Microsoft\\Network\\Downloader\\qmgr*.dat" },
+      
+          { "scope": "curl / PowerShell (Invoke-WebRequest/Invoke-RestMethod)", "notes": "No default logs; check CLI history & 4688", "path": "<PowerShell Operational 4103/4104, ConsoleHost_history.txt, 4688>" }
+        ],
+        "validation": [
+          "Reconstruct command lines from 4688 + Prefetch + Amcache; look for cloud endpoints and containers.",
+          "Parse tool configs for targets (buckets/shares), API keys, refresh tokens, mount points.",
+          "Correlate with network logs (firewall/proxy/EDR) and cloud provider access logs (e.g., S3, Azure Storage)."
+        ],
+        "known_pitfalls": [
+          "Many tools only log when configured (e.g., WinSCP /log=, rclone --log-file, s5cmd stdout).",
+          "Portable builds may store configs alongside the EXE; search near Prefetch target path.",
+          "Legacy Google Drive vs Drive for desktop have different folders; attackers may use either.",
+          "OneDrive has multiple tenant-specific 'Business*' subfolders—check all."
+        ],
+        "parsers": [
+          { "tool_name": "Velociraptor", "command_example": "Artifact.Windows.Applications.DataExfilTools" },
+          { "tool_name": "KAPE", "command_example": "kape.exe --msource C: --module Cloud_Exfil_Triage" }
+        ]
+      },
+      {
+        "id": "gws-log-collection",
+        "name": "GWS Log Collection Steps",
+        "slug": "gws-log-collection",
+        "platform": "gws",
+        "tactic_tags": ["Discovery", "Investigation Preparation"],
+        "artifact_class": "Procedural Guide",
+        "summary": "Step-by-step GUI workflow to pull key Google Workspace audit logs plus quick links for account creation and Super Admin roles.",
+        "description": "Use the Admin console to export audit and security logs. Includes references for creating users and managing Super Admin roles.",
+        "gui_log_collection_steps": [
+          "Admin console: admin.google.com → Menu → Reporting → Audit log",
+          "Admin audit: Reporting → Audit log → Admin → (set date range & filters) → Export (CSV)",
+          "Login audit: Reporting → Audit log → Login → (set date range & filters) → Export (CSV)",
+          "Drive audit: Reporting → Audit log → Drive → (set date range & filters) → Export (CSV)",
+          "Groups audit: Reporting → Audit log → Groups → (set date range & filters) → Export (CSV)",
+          "Calendar audit: Reporting → Audit log → Calendar → (if available) → Export (CSV)",
+          "Token (OAuth) audit: Reporting → Audit log → Token → (set date range & filters) → Export (CSV)",
+          "SAML audit: Reporting → Audit log → SAML → (set date range & filters) → Export (CSV)",
+          "Email Log Search (Gmail): admin.google.com → Apps → Google Workspace → Gmail → Email Log Search → run query → Export"
+        ],
+        "due_diligence_checks": [
+          "Confirm Super Admins list: Admin console → Directory → Roles → Super Admin → View members",
+          "User creation source-of-truth: verify process/policy (see reference links) before creating test users for triage",
+          "BigQuery export enabled? Reporting → Data Export / BigQuery export (if using Workspace Enterprise logs pipeline)"
+        ],
+        "additional_checks": [
+          "Drive DLP events (if licensed): Reporting → Audit log → Drive → filter on DLP",
+          "2-Step verification enforcement: Security → Authentication → 2-step verification",
+          "App access control: Security → Access and data control → API controls → App access control (review risky apps)"
+        ],
+        "references": [
+          { "title": "Account creation (How to create a new user)", "url": "https://knowledge.workspace.google.com/kb/how-to-create-a-new-user-000007668" },
+          { "title": "Super Admin role overview", "url": "https://support.google.com/a/answer/172176?hl=en" },
+          { "title": "Google Admin console", "url": "https://admin.google.com" }
+        ]
       }      
-        
   ]
   
