@@ -148,49 +148,109 @@
         ],
         "event_ids": [
           {
-            "ids": ["4624", "4625", "4634", "4647"],
+            "ids": ["4608", "4609", "4610", "4611", "4612", "4614", "4616", "4624", "4625", "4634", "4647", "4648", "4672", "4673", "4674", "4964"],
             "source": "Security",
-            "description": "Logon-related events: 4624 (successful logon), 4625 (failed logon), 4634 (logoff), 4647 (user-initiated logoff). Useful for authentication timelines."
+            "description": "System and interactive authentication activity, including Windows startup/shutdown, authentication package loading, time changes, successful and failed logons, logoffs, explicit credentials, and privileged logons."
           },
           {
-            "ids": ["1149", "1024", "21", "22", "24", "25"],
-            "source": "Microsoft-Windows-TerminalServices-RemoteConnectionManager / LocalSessionManager",
-            "description": "RDP/terminal services connection events: 1149 (successful RDP logon), 1024/21 (session connect), 22 (disconnect), 24 (reconnect), 25 (disconnect reason)."
+            "ids": ["4649", "4768", "4769", "4770", "4771", "4772", "4773", "4776", "4777"],
+            "source": "Security — Kerberos and NTLM",
+            "description": "Credential validation and Kerberos ticket activity, including TGT and service-ticket requests, renewals, pre-authentication failures, and NTLM validation."
           },
           {
-            "ids": ["7045", "4697"],
-            "source": "System / Security",
-            "description": "Service creation events: 7045 (System log – new service installed), 4697 (Security log – service installed). Persistence indicator."
+            "ids": ["4720", "4722", "4723", "4724", "4725", "4726", "4727", "4728", "4729", "4730", "4731", "4732", "4733", "4734", "4735", "4737", "4738", "4740", "4741", "4742", "4743", "4754", "4755", "4756", "4757", "4758", "4764", "4781", "4798", "4799"],
+            "source": "Security — Account Management",
+            "description": "User, computer, and security-group lifecycle events: creation, deletion, enable/disable, password changes, lockouts, membership changes, enumeration, and account renames."
           },
           {
-            "ids": ["1102", "104"],
-            "source": "Security / Microsoft-Windows-Eventlog",
-            "description": "Audit log clear: 1102 (Security log cleared), 104 (Operational log cleared). Strong defense evasion signal."
+            "ids": ["4697", "7034", "7035", "7036", "7040", "7045"],
+            "source": "Security / System — Service Control Manager",
+            "description": "Service installation, start/stop requests, state changes, start-type changes, and unexpected termination. Useful for persistence and execution analysis."
           },
           {
-            "ids": ["1006", "1007"],
-            "source": "GroupPolicy",
-            "description": "Group Policy processing events: 1006 (failure), 1007 (success). May indicate GPO deployment or tampering."
+            "ids": ["104", "1100", "1102", "1104", "1105", "1108"],
+            "source": "Security / System — Windows Event Log",
+            "description": "Event logging service state, log clearing, backup, automatic archival, and event processing errors. Log clearing is a strong defense-evasion signal."
           },
           {
-            "ids": ["1116", "1117", "1011", "1108", "1015"],
-            "source": "Windows Defender",
-            "description": "Defender detection/operational events: 1116 (malware detected), 1117 (cleaned), 1011 (scan stopped), 1108 (engine error), 1015 (scan started)."
+            "ids": ["4688", "4689", "4690", "4691", "4692", "4693", "4694", "4695", "4696"],
+            "source": "Security — Process and Object Tracking",
+            "description": "Process creation/termination and handle or object operations. Event 4688 can include the executable and command line when command-line auditing is enabled."
           },
           {
-            "ids": ["106", "140", "141", "200", "4698", "4709", "4700", "4702"],
+            "ids": ["4656", "4657", "4658", "4660", "4661", "4662", "4663", "4664", "4665", "4666", "4667", "4668", "4670"],
+            "source": "Security — Object Access",
+            "description": "Handle, file, registry, directory-service, and permission-change auditing. Availability depends on configured system and object audit policy."
+          },
+          {
+            "ids": ["4698", "4699", "4700", "4701", "4702", "106", "129", "140", "141", "142", "200", "201", "202"],
             "source": "Task Scheduler / Security",
-            "description": "Scheduled task events: 106/140/141/200 (creation, registration, update), 4698 (task created), 4709 (deleted), 4700 (enabled), 4702 (updated). Common for persistence."
+            "description": "Scheduled-task registration, deletion, enable/disable, update, launch, action start/completion, and launch failure events. Common evidence for persistence and execution."
           },
           {
-            "ids": ["4688", "4689"],
-            "source": "Security",
-            "description": "Process creation/termination: 4688 (process start, command line), 4689 (process exit). Key for execution tracing."
+            "ids": ["21", "22", "23", "24", "25", "39", "40", "1024", "1025", "1102", "1149", "4778", "4779"],
+            "source": "TerminalServices LocalSessionManager / RemoteConnectionManager / RDPClient / Security",
+            "description": "Inbound and outbound RDP authentication, connection attempts, shell start, session logon/logoff, disconnect/reconnect, and session arbitration events."
           },
           {
-            "ids": ["4100", "4103", "4104"],
-            "source": "Microsoft-Windows-PowerShell",
-            "description": "PowerShell activity: 4100 (engine start), 4103 (module loaded), 4104 (script block logging – actual script content)."
+            "ids": ["400", "403", "600", "800", "4100", "4103", "4104", "4105", "4106"],
+            "source": "Windows PowerShell / Microsoft-Windows-PowerShell",
+            "description": "PowerShell engine, provider, pipeline, module, and script-block activity. Events 4103 and 4104 provide the most useful command and script content when enabled."
+          },
+          {
+            "ids": ["1006", "1007", "1125", "1127", "1129", "1500", "1501", "1502", "1503"],
+            "source": "Microsoft-Windows-GroupPolicy",
+            "description": "Group Policy discovery, connectivity, processing, failure, and application events that can reveal policy deployment or tampering."
+          },
+          {
+            "ids": ["1000", "1001", "1002", "1005", "1008", "1026"],
+            "source": "Application / Windows Error Reporting / .NET Runtime",
+            "description": "Application crashes, hangs, error reporting, and .NET runtime failures that help establish execution and failure timelines."
+          },
+          {
+            "ids": ["12", "13", "41", "42", "1074", "1076", "6005", "6006", "6008", "6009"],
+            "source": "System — Kernel-General / Kernel-Power / EventLog / USER32",
+            "description": "Operating-system startup, shutdown, sleep, resume, planned restart, and unexpected shutdown events."
+          },
+          {
+            "ids": ["19", "20", "21", "22", "24", "25", "31", "34", "35", "43", "44"],
+            "source": "Microsoft-Windows-WindowsUpdateClient",
+            "description": "Windows Update installation, failure, download, detection, and restart-related activity."
+          },
+          {
+            "ids": ["1006", "1007", "1008", "1011", "1013", "1015", "1116", "1117", "1118", "1119", "1120", "1121", "1125", "5001", "5004", "5007", "5010", "5012"],
+            "source": "Microsoft-Windows-Windows Defender/Operational",
+            "description": "Defender scan, detection, remediation, action failure, behavior monitoring, configuration, and protection-state events."
+          },
+          {
+            "ids": ["8002", "8003", "8004", "8005", "8006", "8007", "8028", "8029", "8036", "8037", "8038"],
+            "source": "Microsoft-Windows-AppLocker",
+            "description": "AppLocker allow, audit, block, policy-conversion, and script/MSI/DLL enforcement events."
+          },
+          {
+            "ids": ["3", "4", "5", "59", "60", "61"],
+            "source": "Microsoft-Windows-Bits-Client/Operational",
+            "description": "Background Intelligent Transfer Service job creation, transfer, modification, cancellation, and error events. Useful for identifying BITS-based download and persistence activity."
+          },
+          {
+            "ids": ["5857", "5858", "5859", "5860", "5861"],
+            "source": "Microsoft-Windows-WMI-Activity/Operational",
+            "description": "WMI provider, query, consumer, filter, and permanent event-subscription activity. Useful for execution and persistence investigation."
+          },
+          {
+            "ids": ["5140", "5142", "5143", "5144", "5145", "5168"],
+            "source": "Security — File Share",
+            "description": "Network share access, detailed share checks, share creation/modification/deletion, and SMB SPN validation."
+          },
+          {
+            "ids": ["5152", "5153", "5154", "5155", "5156", "5157", "5158", "5159"],
+            "source": "Security — Windows Filtering Platform",
+            "description": "Network packet and connection allow/block events plus application port bind and listen activity."
+          },
+          {
+            "ids": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29"],
+            "source": "Microsoft-Windows-Sysmon/Operational",
+            "description": "Sysmon process, file, network, image-load, driver, registry, pipe, WMI, DNS, clipboard, file-delete, executable-blocking, and file-shredding telemetry. Event availability depends on the installed Sysmon version and configuration."
           }
         ],
         "parsers": [
@@ -200,7 +260,7 @@
         "collection_methods": ["Log export (.evtx)", "Disk image"],
         "validation": ["Correlate with $MFT/USN, Prefetch, others"],
         "known_pitfalls": ["Log rollover/clearing", "Time skew or wrong TZ on host"]
-    },      
+    },
     {
       "id": "w-mft",
       "name": "NTFS $MFT",
@@ -265,7 +325,7 @@
       "validation": ["Correlate with Scheduled Tasks/EVTX process starts"],
       "known_pitfalls": ["Repository corruption not uncommon", "Requires careful scoping to avoid noise"]
     },
-  
+
     {
       "id": "c-msgtrace",
       "name": "M365 Exchange Message Trace",
@@ -385,7 +445,7 @@
           { "title": "Exchange Admin Center", "url": "https://admin.exchange.microsoft.com/#/" },
           { "title": "Microsoft Purview", "url": "https://purview.microsoft.com" }
         ]
-      }      
-        
+      }
+
   ]
-  
+

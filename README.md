@@ -19,6 +19,17 @@ npm run dev
 
 Open http://localhost:3000
 
+
+## Deploy to GitHub Pages
+
+This repo is configured to deploy automatically with GitHub Actions.
+
+1. Push this project to a GitHub repository.
+2. In GitHub: **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions**.
+3. Push to the `main` branch (or run the **Deploy Next.js site to GitHub Pages** workflow manually).
+
+The workflow builds a static export and publishes the `out/` folder to GitHub Pages.
+
 ### Add Artifacts
 Edit `data/seed.json`. The UI will reflect new entries instantly during dev.
 

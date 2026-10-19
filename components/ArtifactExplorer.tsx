@@ -333,16 +333,32 @@ export default function ArtifactExplorer() {
           )}
           {selected.event_ids && selected.event_ids.length > 0 && (
             <section className="mt-6">
-              <h3 className="text-sm font-semibold text-gray-700">Event IDs</h3>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold text-gray-700">
+                  Event IDs ({selected.event_ids.reduce((count, group) => count + group.ids.length, 0)})
+                </h3>
+                <button
+                  className="text-xs px-2 py-1 border rounded hover:bg-gray-100"
+                  onClick={() => copyLines(
+                    selected.event_ids!.map((group) => `${group.source}: ${group.ids.join(", ")} — ${group.description}`),
+                    `${selected.name} Event IDs`
+                  )}
+                >
+                  Copy all
+                </button>
+              </div>
               <div className="mt-2 space-y-3">
                 {selected.event_ids.map((g, idx) => (
                   <div key={idx} className="border rounded-xl p-3">
                     <div className="text-sm">
                       <span className="font-medium">Source:</span> {g.source}
                     </div>
-                    <div className="mt-1 text-xs text-gray-600">
-                      <span className="font-medium">IDs:</span>{" "}
-                      <span className="font-mono">{g.ids.join(", ")}</span>
+                    <div className="mt-2 flex flex-wrap gap-1.5" aria-label={`Event IDs: ${g.ids.join(", ")}`}>
+                      {g.ids.map((id) => (
+                        <span key={id} className="rounded-md border bg-gray-50 px-2 py-0.5 font-mono text-xs text-gray-700">
+                          {id}
+                        </span>
+                      ))}
                     </div>
                     <div className="mt-1 text-sm text-gray-700">{g.description}</div>
                   </div>
